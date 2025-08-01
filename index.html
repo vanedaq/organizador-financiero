@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Organizador Financiero Completo</title>
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Mi Organizador Financiero Completo</h1>
+            <p>Control total de ingresos, gastos y balance mensual</p>
+            <div class="header-controls">
+                <div class="month-selector">
+                    <span>📅 Mes:</span>
+                    <select id="mesSelector" onchange="cambiarMes()">
+                        <option value="2025-01">Enero 2025</option>
+                        <option value="2025-02">Febrero 2025</option>
+                        <option value="2025-03">Marzo 2025</option>
+                        <option value="2025-04">Abril 2025</option>
+                        <option value="2025-05">Mayo 2025</option>
+                        <option value="2025-06">Junio 2025</option>
+                        <option value="2025-07" selected>Julio 2025</option>
+                        <option value="2025-08">Agosto 2025</option>
+                        <option value="2025-09">Septiembre 2025</option>
+                        <option value="2025-10">Octubre 2025</option>
+                        <option value="2025-11">Noviembre 2025</option>
+                        <option value="2025-12">Diciembre 2025</option>
+                    </select>
+                </div>
+                <button class="btn" style="background: rgba(255,255,255,0.2); color: white;" onclick="probarCalculos()">
+                    🧪 Probar Cálculos
+                </button>
+                <button class="btn" style="background: rgba(255,255,255,0.2); color: white;" onclick="probarResumen()">
+                    📊 Probar Resumen
+                </button>
+                <button class="btn" style="background: rgba(255,255,255,0.2); color: white;" onclick="probarCreditos()">
+                    💳 Probar Créditos
+                </button>
+                <button class="btn" style="background: rgba(255,255,255,0.2); color: white;" onclick="limpiarTodo()">
+                    🗑️ Limpiar Todo
+                </button>
+            </div>
+        </div>
+        
+        <!-- Agregar el resumen financiero -->
+        <div class="summary">
+            <div class="summary-card ingresos">
+                <h3>💵 Ingresos Totales</h3>
+                <div class="amount" id="totalIngresos">$0</div>
+                <div class="percentage" id="ingresosPorcentaje">100%</div>
+            </div>
+            <div class="summary-card fijos">
+                <h3>🏠 Gastos Fijos</h3>
+                <div class="amount" id="totalFijos">$0</div>
+                <div class="percentage" id="fijosPorcentaje">0%</div>
+            </div>
+            <div class="summary-card variables">
+                <h3>💳 Cuotas Mensuales</h3>
+                <div class="amount" id="totalVariables">$0</div>
+                <div class="percentage" id="variablesPorcentaje">0%</div>
+            </div>
+            <div class="summary-card compras">
+                <h3>🛒 Gastos del Mes</h3>
+                <div class="amount" id="totalCompras">$0</div>
+                <div class="percentage" id="comprasPorcentaje">0%</div>
+            </div>
+            <div class="summary-card total">
+                <h3>📊 Total Gastos</h3>
+                <div class="amount" id="totalGastos">$0</div>
+                <div class="percentage" id="gastosPorcentaje">0%</div>
+            </div>
+            <div class="summary-card libre">
+                <h3>💰 Dinero Libre</h3>
+                <div class="amount" id="dineroLibre">$0</div>
+                <div class="percentage" id="librePorcentaje">0%</div>
+            </div>
+        </div>
+        
+        <div id="balanceIndicator" class="balance-indicator"></div>
+        
+        <!-- Pestañas de navegación -->
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('ingresos')">💵 Ingresos</button>
+            <button class="tab" onclick="showTab('fijos')">🏠 Gastos Fijos</button>
+            <button class="tab" onclick="showTab('creditos')">💳 Créditos</button>
+            <button class="tab" onclick="showTab('compras')">🛒 Compras</button>
+            <button class="tab" onclick="showTab('historial')">📊 Historial</button>
+            <button class="tab" onclick="showTab('pruebas')">🧪 Pruebas</button>
+        </div>
+        
+        <div class="content">
+            <!-- Pestaña de Ingresos -->
+            <div id="ingresos" class="tab-content">
+                <div class="section-header">
+                    <h2>💵 Ingresos Mensuales</h2>
+                    <button class="btn btn-success" onclick="agregarIngreso()">+ Agregar Ingreso</button>
+                </div>
+                <div id="listaIngresos"></div>
+            </div>
+            
+            <!-- Pestaña de Gastos Fijos -->
+            <div id="fijos" class="tab-content hidden">
+                <div class="section-header">
+                    <h2>🏠 Gastos Fijos Mensuales</h2>
+                    <button class="btn btn-primary" onclick="agregarGastoFijo()">+ Agregar Gasto</button>
+                </div>
+                <div id="listaFijos"></div>
+            </div>
+            
+            <!-- Pestaña de Créditos -->
+            <div id="creditos" class="tab-content hidden">
+                <div class="section-header">
+                    <h2>💳 Créditos y Tarjetas</h2>
+                    <button class="btn btn-warning" onclick="agregarCredito()">+ Agregar Crédito</button>
+                </div>
+                <div id="listaCreditos"></div>
+            </div>
+            
+            <!-- Pestaña de Compras -->
+            <div id="compras" class="tab-content hidden">
+                <div class="section-header">
+                    <h2>🛒 Compras y Gastos Diarios</h2>
+                    <button class="btn btn-primary" onclick="agregarCompra()">+ Agregar Compra</button>
+                </div>
+                <div id="listaCompras"></div>
+            </div>
+            
+            <!-- Pestaña de Historial -->
+            <div id="historial" class="tab-content hidden">
+                <div class="section-header">
+                    <h2>📊 Historial Mensual</h2>
+                    <button class="btn btn-primary" onclick="exportarDatos()">📥 Exportar Datos</button>
+                </div>
+                <div id="tablaHistorial"></div>
+            </div>
+            
+            <!-- Pestaña de Pruebas -->
+            <div id="pruebas" class="tab-content hidden">
+                <h2>🧪 Prueba de Funciones de Interés</h2>
+                <p>Haz clic en los botones del header para verificar que las funciones funcionan correctamente.</p>
+                
+                <div id="resultados"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar créditos -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Editar Crédito</h3>
+                <button class="close" onclick="cerrarModal()">&times;</button>
+            </div>
+            <div id="modalBody"></div>
+            <div style="display: flex; gap: 15px; justify-content: flex-end; margin-top: 30px;">
+                <button class="btn btn-danger" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn btn-success" onclick="guardarEdicion()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
