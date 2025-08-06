@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💰 Organizador Financiero</title>
+    
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Finanzas">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .app-container {
+            max-width: 100%;
+            margin: 0;
+            background: white;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+
+        .summary-card {
+            padding: 15px;
+            border-radius: 12px;
+            color: white;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .summary-card.ingresos { background: linear-gradient(135deg, #00b894, #00cec9); }
+        .summary-card.fijos { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
+        .summary-card.variables { background: linear-gradient(135deg, #feca57, #ff9ff3); }
+        .summary-card.compras { background: linear-gradient(135deg, #48cae4, #023e8a); }
+        .summary-card.total { background: linear-gradient(135deg, #2d3436, #636e72); }
+        .summary-card.libre { background: linear-gradient(135deg, #00b894, #55a3ff); }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            overflow-x: auto;
+        }
+
+        .tab {
+            flex: 0 0 auto;
+            min-width: 100px;
+            padding: 12px 8px;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            padding: 15px;
+            min-height: 400px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9em;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            min-height: 44px;
+            justify-content: center;
+        }
+
+        .btn-primary { background: #667eea; color: white; }
+        .btn-success { background: #00b894; color: white; }
+        .btn-danger { background: #ff6b6b; color: white; }
+        .btn-warning { background: #feca57; color: white; }
+        .btn-edit { background: #74b9ff; color: white; }
+
+        .item {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .item-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #2d3436;
+            margin-bottom: 3px;
+        }
+
+        .item-date {
+            color: #636e72;
+            font-size: 0.8em;
+        }
+
+        .item-amount {
+            font-size: 1.3em;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .item-actions .btn {
+            flex: 1;
+            font-size: 0.8em;
+            padding: 8px 12px;
+            min-height: 36px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            z-index: 1001;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .toast.show { opacity: 1; }
+        .toast.success { background: #00b894; }
+        .toast.error { background: #ff6b6b; }
+        .toast.warning { background: #feca57; color: #2d3436; }
+        .toast.info { background: #74b9ff; }
+
+        @media (max-width: 480px) {
+            .summary { grid-template-columns: 1fr; }
+            .item-actions { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1>💰 Organizador Financiero</h1>
+            <p>Control total de tus finanzas</p>
+            <div style="margin-top: 15px;">
+                <select id="mesSelector" style="background: rgba(255,255,255,0.15); padding: 8px 15px; border-radius: 20px; border: none; color: white;">
+                    <option value="2025-01">Enero 2025</option>
+                    <option value="2025-02">Febrero 2025</option>
+                    <option value="2025-03">Marzo 2025</option>
+                    <option value="2025-04">Abril 2025</option>
+                    <option value="2025-05">Mayo 2025</option>
+                    <option value="2025-06">Junio 2025</option>
+                    <option value="2025-07">Julio 2025</option>
+                    <option value="2025-08" selected>Agosto 2025</option>
+                    <option value="2025-09">Septiembre 2025</option>
+                    <option value="2025-10">Octubre 2025</option>
+                    <option value="2025-11">Noviembre 2025</option>
+                    <option value="2025-12">Diciembre 2025</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="summary">
+            <div class="summary-card ingresos">
+                <h3>💵 Ingresos</h3>
+                <div id="totalIngresos">$0</div>
+            </div>
+            <div class="summary-card fijos">
+                <h3>🏠 Gastos Fijos</h3>
+                <div id="totalFijos">$0</div>
+            </div>
+            <div class="summary-card variables">
+                <h3>💳 Cuotas</h3>
+                <div id="totalVariables">$0</div>
+            </div>
+            <div class="summary-card compras">
+                <h3>🛒 Compras</h3>
+                <div id="totalCompras">$0</div>
+            </div>
+            <div class="summary-card total">
+                <h3>📊 Total Gastos</h3>
+                <div id="totalGastos">$0</div>
+            </div>
+            <div class="summary-card libre">
+                <h3>💰 Disponible</h3>
+                <div id="dineroLibre">$0</div>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" data-tab="ingresos">💵 Ingresos</button>
+            <button class="tab" data-tab="fijos">🏠 Fijos</button>
+            <button class="tab" data-tab="creditos">💳 Créditos</button>
+            <button class="tab" data-tab="compras">🛒 Compras</button>
+            <button class="tab" data-tab="historial">📊 Historial</button>
+        </div>
+        
+        <div class="content">
+            <div id="ingresos" class="tab-content">
+                <div class="section-header">
+                    <h2>💵 Ingresos</h2>
+                    <button class="btn btn-success" onclick="app.agregarIngreso()">+ Agregar</button>
+                </div>
+                <div id="listaIngresos"></div>
+            </div>
+            
+            <div id="fijos" class="tab-content hidden">
+                <div class="section-header">
+                    <h2>🏠 Gastos Fijos</h2>
+                    <button class="btn btn-primary" onclick="app.agregarGastoFijo()">+ Agregar</button>
+                </div>
+                <div id="listaFijos"></div>
+            </div>
+            
+            <div id="creditos" class="tab-content hidden">
+                <div class="section-header">
+                    <h2>💳 Créditos</h2>
+                    <button class="btn btn-warning" onclick="app.agregarCredito()">+ Agregar</button>
+                </div>
+                <div id="listaCreditos"></div>
+            </div>
+            
+            <div id="compras" class="tab-content hidden">
+                <div class="section-header">
+                    <h2>🛒 Compras</h2>
+                    <button class="btn btn-primary" onclick="app.agregarCompra()">+ Agregar</button>
+                </div>
+                <div id="listaCompras"></div>
+            </div>
+            
+            <div id="historial" class="tab-content hidden">
+                <div class="section-header">
+                    <h2>📊 Historial</h2>
+                    <button class="btn btn-primary" onclick="app.exportarDatos()">📥 Exportar</button>
+                </div>
+                <div id="tablaHistorial"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Crear manifest
+        const manifest = {
+            name: "Organizador Financiero",
+            short_name: "Finanzas",
+            start_url: "./",
+            display: "standalone",
+            background_color: "#667eea",
+            theme_color: "#667eea",
+            icons: [{
+                src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23667eea'/%3E%3Ctext x='50' y='70' font-size='60' text-anchor='middle' fill='white'%3E💰%3C/text%3E%3C/svg%3E",
+                sizes: "192x192",
+                type: "image/svg+xml"
+            }]
+        };
+
+        const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestURL;
+        document.head.appendChild(link);
+
+        class FinanzasApp {
+            constructor() {
+                this.mesActual = "2025-08";
+                this.datos = {};
+                this.init();
+            }
+
+            init() {
+                this.cargarDatos();
+                this.configurarEventos();
+                this.actualizarTodo();
+                this.mostrarToast('App lista!', 'success');
+            }
+
+            configurarEventos() {
+                document.getElementById('mesSelector').addEventListener('change', () => {
+                    this.mesActual = document.getElementById('mesSelector').value;
+                    this.cambiarMes();
+                });
+
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        const tabName = e.target.getAttribute('data-tab');
+                        this.mostrarTab(tabName);
+                    });
+                });
+            }
+
+            mostrarTab(tabName) {
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+
+                document.getElementById(tabName).classList.remove('hidden');
+                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            }
+
+            cambiarMes() {
+                if (!this.datos[this.mesActual]) {
+                    this.datos[this.mesActual] = {
+                        ingresos: [],
+                        gastosFijos: [],
+                        gastosVariables: [],
+                        gastosCompras: []
+                    };
+                }
+                this.actualizarTodo();
+                this.mostrarToast('Mes cambiado', 'info');
+            }
+
+            formatMoney(amount) {
+                return new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    minimumFractionDigits: 0
+                }).format(amount || 0);
+            }
+
+            formatearFecha(fecha) {
+                return new Date(fecha).toLocaleDateString('es-CO');
+            }
+
+            guardarDatos() {
+                localStorage.setItem('finanzasApp', JSON.stringify({
+                    mesActual: this.mesActual,
+                    datos: this.datos
+                }));
+            }
+
+            cargarDatos() {
+                const guardado = localStorage.getItem('finanzasApp');
+                if (guardado) {
+                    const parsed = JSON.parse(guardado);
+                    this.datos = parsed.datos || {};
+                    this.mesActual = parsed.mesActual || this.mesActual;
+                    document.getElementById('mesSelector').value = this.mesActual;
+                } else {
+                    this.inicializarEjemplo();
+                }
+            }
+
+            inicializarEjemplo() {
+                this.datos[this.mesActual] = {
+                    ingresos: [
+                        { id: 1, nombre: "Salario", monto: 3500000, fecha: "2025-08-01" }
+                    ],
+                    gastosFijos: [
+                        { id: 1, nombre: "Arriendo", monto: 1200000, categoria: "Vivienda", fecha: "2025-08-01" }
+                    ],
+                    gastosVariables: [],
+                    gastosCompras: [
+                        { id: 1, nombre: "Supermercado", monto: 400000, categoria: "Alimentación", fecha: "2025-08-10" }
+                    ]
+                };
+            }
+
+            actualizarTodo() {
+                this.actualizarResumen();
+                this.mostrarIngresos();
+                this.mostrarGastosFijos();
+                this.mostrarCreditos();
+                this.mostrarCompras();
+                this.mostrarHistorial();
+                this.guardarDatos();
+            }
+
+            actualizarResumen() {
+                const datosMes = this.datos[this.mesActual] || { ingresos: [], gastosFijos: [], gastosVariables: [], gastosCompras: [] };
+                
+                const totalIngresos = datosMes.ingresos.reduce((sum, item) => sum + item.monto, 0);
+                const totalFijos = datosMes.gastosFijos.reduce((sum, item) => sum + item.monto, 0);
+                const totalVariables = datosMes.gastosVariables.reduce((sum, item) => sum + (item.cuotaMensual || 0), 0);
+                const totalCompras = datosMes.gastosCompras.reduce((sum, item) => sum + item.monto, 0);
+                const totalGastos = totalFijos + totalVariables + totalCompras;
+                const dineroLibre = totalIngresos - totalGastos;
+                
+                document.getElementById('totalIngresos').textContent = this.formatMoney(totalIngresos);
+                document.getElementById('totalFijos').textContent = this.formatMoney(totalFijos);
+                document.getElementById('totalVariables').textContent = this.formatMoney(totalVariables);
+                document.getElementById('totalCompras').textContent = this.formatMoney(totalCompras);
+                document.getElementById('totalGastos').textContent = this.formatMoney(totalGastos);
+                document.getElementById('dineroLibre').textContent = this.formatMoney(dineroLibre);
+            }
+
+            mostrarIngresos() {
+                const container = document.getElementById('listaIngresos');
+                const datosMes = this.datos[this.mesActual] || { ingresos: [] };
+                
+                if (datosMes.ingresos.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #636e72; padding: 20px;">No hay ingresos registrados.</p>';
+                    return;
+                }
+                
+                let html = '';
+                datosMes.ingresos.forEach(ingreso => {
+                    html += `
+                        <div class="item">
+                            <div class="item-header">
+                                <div>
+                                    <div class="item-title">${ingreso.nombre}</div>
+                                    <div class="item-date">${this.formatearFecha(ingreso.fecha)}</div>
+                                </div>
+                                <div class="item-amount" style="color: #00b894;">${this.formatMoney(ingreso.monto)}</div>
+                            </div>
+                            <div class="item-actions">
+                                <button class="btn btn-edit" onclick="app.editarIngreso(${ingreso.id})">Editar</button>
+                                <button class="btn btn-danger" onclick="app.eliminarIngreso(${ingreso.id})">Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+
+            mostrarGastosFijos() {
+                const container = document.getElementById('listaFijos');
+                const datosMes = this.datos[this.mesActual] || { gastosFijos: [] };
+                
+                if (datosMes.gastosFijos.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #636e72; padding: 20px;">No hay gastos fijos registrados.</p>';
+                    return;
+                }
+                
+                let html = '';
+                datosMes.gastosFijos.forEach(gasto => {
+                    html += `
+                        <div class="item">
+                            <div class="item-header">
+                                <div>
+                                    <div class="item-title">${gasto.nombre}</div>
+                                    <div class="item-date">${this.formatearFecha(gasto.fecha)}</div>
+                                </div>
+                                <div class="item-amount" style="color: #ff6b6b;">${this.formatMoney(gasto.monto)}</div>
+                            </div>
+                            <div class="item-actions">
+                                <button class="btn btn-edit" onclick="app.editarGastoFijo(${gasto.id})">Editar</button>
+                                <button class="btn btn-danger" onclick="app.eliminarGastoFijo(${gasto.id})">Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+
+            mostrarCreditos() {
+                const container = document.getElementById('listaCreditos');
+                const datosMes = this.datos[this.mesActual] || { gastosVariables: [] };
+                
+                if (datosMes.gastosVariables.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #636e72; padding: 20px;">No hay créditos registrados.</p>';
+                    return;
+                }
+                
+                let html = '';
+                datosMes.gastosVariables.forEach(credito => {
+                    html += `
+                        <div class="item">
+                            <div class="item-header">
+                                <div>
+                                    <div class="item-title">${credito.nombre}</div>
+                                    <div class="item-date">${this.formatearFecha(credito.fecha)}</div>
+                                </div>
+                                <div class="item-amount" style="color: #feca57;">${this.formatMoney(credito.cuotaMensual || 0)}</div>
+                            </div>
+                            <div class="item-actions">
+                                <button class="btn btn-edit" onclick="app.editarCredito(${credito.id})">Editar</button>
+                                <button class="btn btn-danger" onclick="app.eliminarCredito(${credito.id})">Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+
+            mostrarCompras() {
+                const container = document.getElementById('listaCompras');
+                const datosMes = this.datos[this.mesActual] || { gastosCompras: [] };
+                
+                if (datosMes.gastosCompras.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #636e72; padding: 20px;">No hay compras registradas.</p>';
+                    return;
+                }
+                
+                let html = '';
+                datosMes.gastosCompras.forEach(compra => {
+                    html += `
+                        <div class="item">
+                            <div class="item-header">
+                                <div>
+                                    <div class="item-title">${compra.nombre}</div>
+                                    <div class="item-date">${this.formatearFecha(compra.fecha)}</div>
+                                </div>
+                                <div class="item-amount" style="color: #48cae4;">${this.formatMoney(compra.monto)}</div>
+                            </div>
+                            <div class="item-actions">
+                                <button class="btn btn-edit" onclick="app.editarCompra(${compra.id})">Editar</button>
+                                <button class="btn btn-danger" onclick="app.eliminarCompra(${compra.id})">Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+
+            mostrarHistorial() {
+                const container = document.getElementById('tablaHistorial');
+                const meses = Object.keys(this.datos).sort();
+                
+                if (meses.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #636e72; padding: 20px;">No hay datos históricos.</p>';
+                    return;
+                }
+                
+                let html = '<table style="width: 100%; border-collapse: collapse;">';
+                html += '<thead><tr><th>Mes</th><th>Ingresos</th><th>Gastos</th><th>Balance</th></tr></thead><tbody>';
+                
+                meses.forEach(mes => {
+                    const datos = this.datos[mes];
+                    const ingresos = datos.ingresos.reduce((sum, item) => sum + item.monto, 0);
+                    const gastos = datos.gastosFijos.reduce((sum, item) => sum + item.monto, 0) + 
+                                  datos.gastosCompras.reduce((sum, item) => sum + item.monto, 0);
+                    const balance = ingresos - gastos;
+                    
+                    html += `<tr>
+                        <td>${mes}</td>
+                        <td>${this.formatMoney(ingresos)}</td>
+                        <td>${this.formatMoney(gastos)}</td>
+                        <td style="color: ${balance >= 0 ? '#00b894' : '#ff6b6b'}">${this.formatMoney(balance)}</td>
+                    </tr>`;
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            }
+
+            agregarIngreso() {
+                const nombre = prompt('Nombre del ingreso:');
+                const monto = parseFloat(prompt('Monto:'));
+                
+                if (nombre && monto > 0) {
+                    if (!this.datos[this.mesActual]) this.cambiarMes();
+                    
+                    this.datos[this.mesActual].ingresos.push({
+                        id: Date.now(),
+                        nombre: nombre,
+                        monto: monto,
+                        fecha: new Date().toISOString().split('T')[0]
+                    });
+                    
+                    this.actualizarTodo();
+                    this.mostrarToast('Ingreso agregado', 'success');
+                }
+            }
+
+            agregarGastoFijo() {
+                const nombre = prompt('Nombre del gasto:');
+                const monto = parseFloat(prompt('Monto:'));
+                
+                if (nombre && monto > 0) {
+                    if (!this.datos[this.mesActual]) this.cambiarMes();
+                    
+                    this.datos[this.mesActual].gastosFijos.push({
+                        id: Date.now(),
+                        nombre: nombre,
+                        monto: monto,
+                        categoria: 'General',
+                        fecha: new Date().toISOString().split('T')[0]
+                    });
+                    
+                    this.actualizarTodo();
+                    this.mostrarToast('Gasto agregado', 'success');
+                }
+            }
+
+            agregarCredito() {
+                const nombre = prompt('Nombre del crédito:');
+                const monto = parseFloat(prompt('Monto total:'));
+                const cuotas = parseInt(prompt('Número de cuotas:'));
+                
+                if (nombre && monto > 0 && cuotas > 0) {
+                    if (!this.datos[this.mesActual]) this.cambiarMes();
+                    
+                    this.datos[this.mesActual].gastosVariables.push({
+                        id: Date.now(),
+                        nombre: nombre,
+                        montoTotal: monto,
+                        numeroCuotas: cuotas,
+                        cuotasPagadas: 0,
+                        cuotaMensual: monto / cuotas,
+                        fecha: new Date().toISOString().split('T')[0]
+                    });
+                    
+                    this.actualizarTodo();
+                    this.mostrarToast('Crédito agregado', 'success');
+                }
+            }
+
+            agregarCompra() {
+                const nombre = prompt('Descripción:');
+                const monto = parseFloat(prompt('Monto:'));
+                
+                if (nombre && monto > 0) {
+                    if (!this.datos[this.mesActual]) this.cambiarMes();
+                    
+                    this.datos[this.mesActual].gastosCompras.push({
+                        id: Date.now(),
+                        nombre: nombre,
+                        monto: monto,
+                        categoria: 'General',
+                        fecha: new Date().toISOString().split('T')[0]
+                    });
+                    
+                    this.actualizarTodo();
+                    this.mostrarToast('Compra agregada', 'success');
+                }
+            }
+
+            editarIngreso(id) {
+                const item = this.datos[this.mesActual].ingresos.find(i => i.id === id);
+                if (item) {
+                    const nombre = prompt('Nuevo nombre:', item.nombre);
+                    const monto = parseFloat(prompt('Nuevo monto:', item.monto));
+                    if (nombre && monto > 0) {
+                        item.nombre = nombre;
+                        item.monto = monto;
+                        this.actualizarTodo();
+                        this.mostrarToast('Ingreso actualizado', 'success');
+                    }
+                }
+            }
+
+            editarGastoFijo(id) {
+                const item = this.datos[this.mesActual].gastosFijos.find(g => g.id === id);
+                if (item) {
+                    const nombre = prompt('Nuevo nombre:', item.nombre);
+                    const monto = parseFloat(prompt('Nuevo monto:', item.monto));
+                    if (nombre && monto > 0) {
+                        item.nombre = nombre;
+                        item.monto = monto;
+                        this.actualizarTodo();
+                        this.mostrarToast('Gasto actualizado', 'success');
+                    }
+                }
+            }
+
+            editarCredito(id) {
+                const item = this.datos[this.mesActual].gastosVariables.find(c => c.id === id);
+                if (item) {
+                    const nombre = prompt('Nuevo nombre:', item.nombre);
+                    const monto = parseFloat(prompt('Nuevo monto:', item.montoTotal));
+                    const cuotas = parseInt(prompt('Nuevas cuotas:', item.numeroCuotas));
+                    if (nombre && monto > 0 && cuotas > 0) {
+                        item.nombre = nombre;
+                        item.montoTotal = monto;
+                        item.numeroCuotas = cuotas;
+                        item.cuotaMensual = monto / cuotas;
+                        this.actualizarTodo();
+                        this.mostrarToast('Crédito actualizado', 'success');
+                    }
+                }
+            }
+
+            editarCompra(id) {
+                const item = this.datos[this.mesActual].gastosCompras.find(c => c.id === id);
+                if (item) {
+                    const nombre = prompt('Nueva descripción:', item.nombre);
+                    const monto = parseFloat(prompt('Nuevo monto:', item.monto));
+                    if (nombre && monto > 0) {
+                        item.nombre = nombre;
+                        item.monto = monto;
+                        this.actualizarTodo();
+                        this.mostrarToast('Compra actualizada', 'success');
+                    }
+                }
+            }
+
+            eliminarIngreso(id) {
+                if (confirm('¿Eliminar este ingreso?')) {
+                    this.datos[this.mesActual].ingresos = this.datos[this.mesActual].ingresos.filter(item => item.id !== id);
+                    this.actualizarTodo();
+                    this.mostrarToast('Ingreso eliminado', 'success');
+                }
+            }
+
+            eliminarGastoFijo(id) {
+                if (confirm('¿Eliminar este gasto?')) {
+                    this.datos[this.mesActual].gastosFijos = this.datos[this.mesActual].gastosFijos.filter(item => item.id !== id);
+                    this.actualizarTodo();
+                    this.mostrarToast('Gasto eliminado', 'success');
+                }
+            }
+
+            eliminarCredito(id) {
+                if (confirm('¿Eliminar este crédito?')) {
+                    this.datos[this.mesActual].gastosVariables = this.datos[this.mesActual].gastosVariables.filter(item => item.id !== id);
+                    this.actualizarTodo();
+                    this.mostrarToast('Crédito eliminado', 'success');
+                }
+            }
+
+            eliminarCompra(id) {
+                if (confirm('¿Eliminar esta compra?')) {
+                    this.datos[this.mesActual].gastosCompras = this.datos[this.mesActual].gastosCompras.filter(item => item.id !== id);
+                    this.actualizarTodo();
+                    this.mostrarToast('Compra eliminada', 'success');
+                }
+            }
+
+            exportarDatos() {
+                const datos = {
+                    version: '1.0',
+                    fecha: new Date().toISOString(),
+                    mesActual: this.mesActual,
+                    datos: this.datos
+                };
+                
+                const blob = new Blob([JSON.stringify(datos, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'finanzas-' + new Date().toISOString().split('T')[0] + '.json';
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                this.mostrarToast('Datos exportados', 'success');
+            }
+
+            mostrarToast(mensaje, tipo) {
+                const toast = document.getElementById('toast');
+                toast.textContent = mensaje;
+                toast.className = 'toast ' + tipo + ' show';
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        // Inicializar la app
+        let app;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            app = new FinanzasApp();
+            console.log('App iniciada correctamente');
+        });
+
+        // PWA features
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            setTimeout(() => {
+                if (deferredPrompt) {
+                    const btn = document.createElement('button');
+                    btn.innerHTML = '📱 Instalar';
+                    btn.className = 'btn btn-primary';
+                    btn.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 1000;';
+                    
+                    btn.addEventListener('click', async () => {
+                        deferredPrompt.prompt();
+                        const result = await deferredPrompt.userChoice;
+                        if (result.outcome === 'accepted') {
+                            console.log('PWA instalada');
+                            app.mostrarToast('App instalada correctamente!', 'success');
+                        }
+                        deferredPrompt = null;
+                        btn.remove();
+                    });
+                    
+                    document.body.appendChild(btn);
+                }
+            }, 3000);
+        });
+
+        // Detectar cuando la app está instalada
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA instalada exitosamente');
+            if (app) {
+                app.mostrarToast('App instalada!', 'success');
+            }
+        });
+    </script>
+</body>
+</html>
