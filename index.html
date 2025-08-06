@@ -417,7 +417,19 @@
                     gastosFijos: [
                         { id: 1, nombre: "Arriendo", monto: 1200000, categoria: "Vivienda", fecha: "2025-08-01" }
                     ],
-                    gastosVariables: [],
+                    gastosVariables: [
+                        { 
+                            id: 1, 
+                            tipo: "tarjeta",
+                            nombre: "Visa Banco", 
+                            montoTotal: 1500000, 
+                            numeroCuotas: 12, 
+                            cuotasPagadas: 3,
+                            tasaInteres: 2.8,
+                            cuotaMensual: 138000,
+                            fecha: "2025-08-01" 
+                        }
+                    ],
                     gastosCompras: [
                         { id: 1, nombre: "Supermercado", monto: 400000, categoria: "Alimentación", fecha: "2025-08-10" }
                     ]
@@ -523,14 +535,40 @@
                 
                 let html = '';
                 datosMes.gastosVariables.forEach(credito => {
+                    const progreso = credito.numeroCuotas > 0 ? (credito.cuotasPagadas / credito.numeroCuotas) * 100 : 0;
+                    const tipoIcon = credito.tipo === 'tarjeta' ? '💳' : '🏦';
+                    const tipoText = credito.tipo === 'tarjeta' ? 'Tarjeta' : 'Crédito';
+                    
                     html += `
                         <div class="item">
                             <div class="item-header">
                                 <div>
-                                    <div class="item-title">${credito.nombre}</div>
+                                    <div class="item-title">${tipoIcon} ${credito.nombre}</div>
                                     <div class="item-date">${this.formatearFecha(credito.fecha)}</div>
+                                    <small style="background: #e9ecef; padding: 2px 8px; border-radius: 10px; font-size: 0.7em; color: #495057;">
+                                        ${tipoText} • ${credito.tasaInteres || 0}% mensual
+                                    </small>
                                 </div>
                                 <div class="item-amount" style="color: #feca57;">${this.formatMoney(credito.cuotaMensual || 0)}</div>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin: 10px 0;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.8em; margin-bottom: 8px;">
+                                    <span>Progreso: ${credito.cuotasPagadas}/${credito.numeroCuotas}</span>
+                                    <span>${progreso.toFixed(1)}%</span>
+                                </div>
+                                <div style="background: #e9ecef; height: 6px; border-radius: 3px; overflow: hidden;">
+                                    <div style="background: linear-gradient(90deg, #00b894, #00cec9); height: 100%; width: ${progreso}%; transition: width 0.3s;"></div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; font-size: 0.8em;">
+                                    <div style="text-align: center;">
+                                        <div style="color: #636e72;">Monto Total</div>
+                                        <div style="font-weight: bold;">${this.formatMoney(credito.montoTotal || 0)}</div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="color: #636e72;">Saldo Pendiente</div>
+                                        <div style="font-weight: bold; color: #ff6b6b;">${this.formatMoney((credito.montoTotal || 0) - ((credito.cuotaMensual || 0) * (credito.cuotasPagadas || 0)))}</div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="item-actions">
                                 <button class="btn btn-edit" onclick="app.editarCredito(${credito.id})">Editar</button>
@@ -643,25 +681,50 @@
             }
 
             agregarCredito() {
-                const nombre = prompt('Nombre del crédito:');
+                const tipo = prompt('Tipo (escribe "tarjeta" para tarjeta de crédito o "credito" para crédito bancario):');
+                if (!tipo || (tipo.toLowerCase() !== 'tarjeta' && tipo.toLowerCase() !== 'credito')) {
+                    this.mostrarToast('Tipo inválido. Usa "tarjeta" o "credito"', 'error');
+                    return;
+                }
+                
+                const nombre = prompt('Nombre del ' + (tipo.toLowerCase() === 'tarjeta' ? 'tarjeta' : 'crédito') + ':');
                 const monto = parseFloat(prompt('Monto total:'));
                 const cuotas = parseInt(prompt('Número de cuotas:'));
+                const interes = parseFloat(prompt('Tasa de interés mensual (% - ejemplo: 2.5):')) || 0;
+                const cuotasPagadas = parseInt(prompt('Cuotas ya pagadas:')) || 0;
                 
                 if (nombre && monto > 0 && cuotas > 0) {
+                    if (cuotasPagadas > cuotas) {
+                        this.mostrarToast('Las cuotas pagadas no pueden ser más que el total', 'error');
+                        return;
+                    }
+                    
                     if (!this.datos[this.mesActual]) this.cambiarMes();
+                    
+                    // Calcular cuota con interés
+                    let cuotaMensual;
+                    if (interes > 0) {
+                        const interesMensual = interes / 100;
+                        const factor = Math.pow(1 + interesMensual, cuotas);
+                        cuotaMensual = (monto * interesMensual * factor) / (factor - 1);
+                    } else {
+                        cuotaMensual = monto / cuotas;
+                    }
                     
                     this.datos[this.mesActual].gastosVariables.push({
                         id: Date.now(),
+                        tipo: tipo.toLowerCase(),
                         nombre: nombre,
                         montoTotal: monto,
                         numeroCuotas: cuotas,
-                        cuotasPagadas: 0,
-                        cuotaMensual: monto / cuotas,
+                        cuotasPagadas: cuotasPagadas,
+                        tasaInteres: interes,
+                        cuotaMensual: cuotaMensual,
                         fecha: new Date().toISOString().split('T')[0]
                     });
                     
                     this.actualizarTodo();
-                    this.mostrarToast('Crédito agregado', 'success');
+                    this.mostrarToast((tipo.toLowerCase() === 'tarjeta' ? 'Tarjeta' : 'Crédito') + ' agregado correctamente', 'success');
                 }
             }
 
@@ -717,15 +780,36 @@
                 const item = this.datos[this.mesActual].gastosVariables.find(c => c.id === id);
                 if (item) {
                     const nombre = prompt('Nuevo nombre:', item.nombre);
-                    const monto = parseFloat(prompt('Nuevo monto:', item.montoTotal));
-                    const cuotas = parseInt(prompt('Nuevas cuotas:', item.numeroCuotas));
+                    const monto = parseFloat(prompt('Nuevo monto total:', item.montoTotal));
+                    const cuotas = parseInt(prompt('Nuevo número de cuotas:', item.numeroCuotas));
+                    const interes = parseFloat(prompt('Nueva tasa de interés mensual (%):', item.tasaInteres || 0));
+                    const cuotasPagadas = parseInt(prompt('Cuotas pagadas:', item.cuotasPagadas || 0));
+                    
                     if (nombre && monto > 0 && cuotas > 0) {
+                        if (cuotasPagadas > cuotas) {
+                            this.mostrarToast('Las cuotas pagadas no pueden ser más que el total', 'error');
+                            return;
+                        }
+                        
+                        // Calcular nueva cuota con interés
+                        let cuotaMensual;
+                        if (interes > 0) {
+                            const interesMensual = interes / 100;
+                            const factor = Math.pow(1 + interesMensual, cuotas);
+                            cuotaMensual = (monto * interesMensual * factor) / (factor - 1);
+                        } else {
+                            cuotaMensual = monto / cuotas;
+                        }
+                        
                         item.nombre = nombre;
                         item.montoTotal = monto;
                         item.numeroCuotas = cuotas;
-                        item.cuotaMensual = monto / cuotas;
+                        item.cuotasPagadas = cuotasPagadas;
+                        item.tasaInteres = interes;
+                        item.cuotaMensual = cuotaMensual;
+                        
                         this.actualizarTodo();
-                        this.mostrarToast('Crédito actualizado', 'success');
+                        this.mostrarToast((item.tipo === 'tarjeta' ? 'Tarjeta' : 'Crédito') + ' actualizado', 'success');
                     }
                 }
             }
