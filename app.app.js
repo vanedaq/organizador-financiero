@@ -17,7 +17,6 @@ class Finanzas{
     this.bindUI();
     this.renderAll();
 
-    // SW opcional
     if('serviceWorker' in navigator){ try{navigator.serviceWorker.register('./sw.js');}catch{} }
   }
 
@@ -198,7 +197,7 @@ class Finanzas{
     document.getElementById('recomendaciones').innerHTML = list.map(c=>`<div class="item"><b>${c.t}</b><div class="meta">${c.d}</div></div>`).join('');
   }
 
-  // ===== CRUD con modal
+  // ===== CRUD con modal (cierre inmediato y seguro)
   openForm(action){
     const map={
       addIngreso:{title:'Nuevo Ingreso',fields:[['nombre','text','Nombre'],['monto','number','Monto'],['categoria','text','Categoría','Trabajo'],['fecha','date','Fecha',`${this.mes}-01`]]},
@@ -263,20 +262,65 @@ class Finanzas{
     const m=prompt('¿Cuánto agregar?', '0'); const n=num(m); if(n>0){ a.actual+=n; this.save(); this.renderAll(); this.toast('Ahorro agregado'); }
   }
 
-  // --- modal
+  // --- MODAL (cierre inmediato + ESC + click fuera + limpieza)
   showModal(title, fields, onSubmit){
-    const modal=document.getElementById('modal');
-    const form=document.getElementById('modalForm');
-    document.getElementById('modalTitle').textContent=title;
+    const modal = document.getElementById('modal');
+    const form  = document.getElementById('modalForm');
+    const titleEl = document.getElementById('modalTitle');
+
+    titleEl.textContent = title;
+
     form.innerHTML = fields.map(([name,type,label,value])=>{
       const val = value!=null?value:'';
       return `<div class="field"><label>${label}</label><input type="${type}" id="f_${name}" value="${val}"></div>`;
-    }).join('') + `<div class="actions"><button type="submit" class="primary">Guardar</button><button type="button" class="cancel" id="cancelModal">Cancelar</button></div>`;
-    modal.classList.remove('hidden'); modal.setAttribute('aria-hidden','false');
-    document.getElementById('cancelModal').onclick=()=>this.closeModal();
-    form.onsubmit=(e)=>{ e.preventDefault(); const v={}; fields.forEach(([n])=>v[n]=document.getElementById('f_'+n).value); onSubmit(v); this.closeModal(); };
+    }).join('') + `
+      <div class="actions">
+        <button type="submit" id="submitModal" class="primary">Guardar</button>
+        <button type="button" class="cancel" id="cancelModal">Cancelar</button>
+      </div>`;
+
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden','false');
+
+    // Cerrar con botón cancelar, clic fuera y tecla ESC
+    const cancelBtn = document.getElementById('cancelModal');
+    const onCancel = () => this.closeModal();
+    cancelBtn.addEventListener('click', onCancel, { once:true });
+
+    const clickOutside = (ev) => { if (ev.target.id === 'modal') this.closeModal(); };
+    modal.addEventListener('click', clickOutside, { once:true });
+
+    const escHandler = (ev) => { if (ev.key === 'Escape') { this.closeModal(); } };
+    document.addEventListener('keydown', escHandler, { once:true });
+
+    // Submit: cerramos inmediatamente y guardamos después (evita que quede abierto)
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('submitModal');
+      submitBtn.disabled = true;              // anti-doble clic
+
+      const vals = {};
+      fields.forEach(([n]) => vals[n] = document.getElementById('f_'+n).value);
+
+      this.closeModal();                      // 1) cerrar YA el modal
+      setTimeout(() => {                      // 2) guardar sin bloquear la UI
+        onSubmit(vals);
+        submitBtn.disabled = false;
+      }, 0);
+
+      // Limpieza de listeners (por si el navegador mantiene referencias)
+      modal.removeEventListener('click', clickOutside, { once:true });
+      document.removeEventListener('keydown', escHandler, { once:true });
+    };
   }
-  closeModal(){ const m=document.getElementById('modal'); m.classList.add('hidden'); m.setAttribute('aria-hidden','true'); document.getElementById('modalForm').innerHTML=''; }
+
+  closeModal(){
+    const modal = document.getElementById('modal');
+    const form  = document.getElementById('modalForm');
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden','true');
+    form.innerHTML = ''; // evita que el formulario anterior quede en memoria
+  }
 
   // --- cuota
   cuota(M,i,n){ if(!n||n<=0) return 0; if(!i) return Math.round(M/n); const f=Math.pow(1+i,n); return Math.round(M*i*f/(f-1)); }
