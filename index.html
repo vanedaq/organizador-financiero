@@ -9,124 +9,79 @@
   <link rel="stylesheet" href="style.app.css">
 </head>
 <body>
-  <div class="app">
-    <header class="header">
-      <h1>💰 Organizador Financiero</h1>
-      <select id="mesSelector" class="month"></select>
-    </header>
+  <div class="header">
+    <h1>💰 Organizador Financiero</h1>
+    <select id="mesSelector"></select>
+  </div>
 
-    <div class="summary-grid">
-      <div class="card ingresos"><div>💵 Ingresos</div><b id="sumIngresos">$0</b></div>
-      <div class="card fijos"><div>🏠 Fijos</div><b id="sumFijos">$0</b></div>
-      <div class="card tarjetas"><div>💳 Tarjetas</div><b id="sumTarjetas">$0</b></div>
-      <div class="card creditos"><div>🏦 Créditos</div><b id="sumCreditos">$0</b></div>
-      <div class="card compras"><div>🛒 Compras</div><b id="sumCompras">$0</b></div>
-      <div class="card ahorros"><div>💎 Ahorros</div><b id="sumAhorros">$0</b></div>
-      <div class="card total"><div>📊 Total Gastos</div><b id="sumGastos">$0</b></div>
-      <div class="card libre"><div>💰 Disponible</div><b id="sumLibre">$0</b></div>
-    </div>
+  <div class="summary">
+    <div>Ingresos: <span id="sumIngresos">$0</span></div>
+    <div>Fijos: <span id="sumFijos">$0</span></div>
+    <div>Tarjetas: <span id="sumTarjetas">$0</span></div>
+    <div>Créditos: <span id="sumCreditos">$0</span></div>
+    <div>Compras: <span id="sumCompras">$0</span></div>
+    <div>Ahorros: <span id="sumAhorros">$0</span></div>
+    <div>Total Gastos: <span id="sumGastos">$0</span></div>
+    <div>Disponible: <span id="sumLibre">$0</span></div>
+  </div>
 
-    <nav class="tabs">
-      <button class="tab active" data-tab="dashboard">📊 Dashboard</button>
-      <button class="tab" data-tab="ingresos">💵 Ingresos</button>
-      <button class="tab" data-tab="fijos">🏠 Fijos</button>
-      <button class="tab" data-tab="tarjetas">💳 Tarjetas</button>
-      <button class="tab" data-tab="creditos">🏦 Créditos</button>
-      <button class="tab" data-tab="compras">🛒 Compras</button>
-      <button class="tab" data-tab="ahorros">💎 Ahorros</button>
-      <button class="tab" data-tab="consejos">💡 Consejos</button>
-    </nav>
+  <div class="tabs">
+    <button class="tab active" data-tab="dashboard">📊 Dashboard</button>
+    <button class="tab" data-tab="ingresos">💵 Ingresos</button>
+    <button class="tab" data-tab="fijos">🏠 Fijos</button>
+    <button class="tab" data-tab="tarjetas">💳 Tarjetas</button>
+    <button class="tab" data-tab="creditos">🏦 Créditos</button>
+    <button class="tab" data-tab="compras">🛒 Compras</button>
+    <button class="tab" data-tab="ahorros">💎 Ahorros</button>
+    <button class="tab" data-tab="consejos">💡 Consejos</button>
+  </div>
 
-    <main class="content">
-      <section id="dashboard" class="panel">
-        <div class="section-header">
-          <h2>📊 Dashboard Financiero</h2>
-          <div class="actions">
-            <button class="btn" id="exportBtn">📥 Exportar</button>
-            <button class="btn danger" id="resetBtn">🧹 Reset</button>
-          </div>
-        </div>
-        <div class="card white">
-          <h3>📈 Análisis del Mes</h3>
-          <div id="analisisMensual"></div>
-        </div>
-        <div class="card white">
-          <h3>🎯 Metas de Ahorro</h3>
-          <div id="metasAhorro"></div>
-        </div>
-        <div class="card white">
-          <h3>📊 Historial</h3>
-          <div id="tablaHistorial"></div>
-        </div>
-      </section>
+  <!-- Paneles -->
+  <div id="dashboard" class="panel">
+    <div id="analisisMensual"></div>
+    <div id="metasAhorro"></div>
+    <div id="tablaHistorial"></div>
+    <button id="exportBtn">📥 Exportar</button>
+    <button id="resetBtn">♻️ Reset</button>
+  </div>
+  <div id="ingresos" class="panel hidden">
+    <button id="addIngreso">+ Ingreso</button>
+    <div id="listaIngresos"></div>
+  </div>
+  <div id="fijos" class="panel hidden">
+    <button id="addFijo">+ Gasto Fijo</button>
+    <div id="listaFijos"></div>
+  </div>
+  <div id="tarjetas" class="panel hidden">
+    <button id="addTarjeta">+ Tarjeta</button>
+    <div id="listaTarjetas"></div>
+  </div>
+  <div id="creditos" class="panel hidden">
+    <button id="addCredito">+ Crédito</button>
+    <div id="listaCreditos"></div>
+  </div>
+  <div id="compras" class="panel hidden">
+    <button id="addCompra">+ Compra</button>
+    <div id="listaCompras"></div>
+  </div>
+  <div id="ahorros" class="panel hidden">
+    <button id="addAhorro">+ Meta Ahorro</button>
+    <div id="listaAhorros"></div>
+  </div>
+  <div id="consejos" class="panel hidden">
+    <div id="recomendaciones"></div>
+  </div>
 
-      <section id="ingresos" class="panel hidden">
-        <div class="section-header">
-          <h2>💵 Ingresos</h2>
-          <button class="btn" id="addIngreso">+ Agregar</button>
-        </div>
-        <div id="listaIngresos"></div>
-      </section>
-
-      <section id="fijos" class="panel hidden">
-        <div class="section-header">
-          <h2>🏠 Gastos Fijos</h2>
-          <button class="btn" id="addFijo">+ Agregar</button>
-        </div>
-        <div id="listaFijos"></div>
-      </section>
-
-      <section id="tarjetas" class="panel hidden">
-        <div class="section-header">
-          <h2>💳 Tarjetas</h2>
-          <button class="btn" id="addTarjeta">+ Agregar</button>
-        </div>
-        <div id="listaTarjetas"></div>
-      </section>
-
-      <section id="creditos" class="panel hidden">
-        <div class="section-header">
-          <h2>🏦 Créditos</h2>
-          <button class="btn" id="addCredito">+ Agregar</button>
-        </div>
-        <div id="listaCreditos"></div>
-      </section>
-
-      <section id="compras" class="panel hidden">
-        <div class="section-header">
-          <h2>🛒 Compras</h2>
-          <button class="btn" id="addCompra">+ Agregar</button>
-        </div>
-        <div id="listaCompras"></div>
-      </section>
-
-      <section id="ahorros" class="panel hidden">
-        <div class="section-header">
-          <h2>💎 Metas de Ahorro</h2>
-          <button class="btn" id="addAhorro">+ Nueva Meta</button>
-        </div>
-        <div id="listaAhorros"></div>
-      </section>
-
-      <section id="consejos" class="panel hidden">
-        <div class="section-header"><h2>💡 Consejos</h2></div>
-        <div id="recomendaciones"></div>
-      </section>
-    </main>
-
-    <div id="toast" class="toast"></div>
-
-    <!-- Modal -->
-    <div id="modal" class="modal hidden">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 id="modalTitle">Formulario</h3>
-          <button id="closeModal" class="close">×</button>
-        </div>
-        <form id="modalForm" class="form"></form>
-      </div>
+  <!-- Modal -->
+  <div id="modal" class="hidden">
+    <div class="modal-content">
+      <h2 id="modalTitle"></h2>
+      <form id="modalForm"></form>
+      <button id="closeModal">Cerrar</button>
     </div>
   </div>
+
+  <div id="toast"></div>
 
   <script src="app.app.js"></script>
 </body>
