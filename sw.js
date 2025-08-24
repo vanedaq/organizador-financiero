@@ -1,5 +1,5 @@
 // cambia la versión si actualizas archivos para forzar refresh
-const CACHE = 'finanzas-v3';
+const CACHE = 'finanzas-v4';
 
 self.addEventListener('install', e => {
   e.waitUntil(
